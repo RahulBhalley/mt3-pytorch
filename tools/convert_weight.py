@@ -155,7 +155,8 @@ def main(args):
     }
     state_dict = convert_t5x_to_pt(
         config=config_dict, flatten_statedict=state_dict)
-    from ..models.t5 import T5ForConditionalGeneration, T5Config
+    # from ..models.t5 import T5ForConditionalGeneration, T5Config
+    from t5 import T5ForConditionalGeneration, T5Config
     config = T5Config.from_dict(config_dict)
     model: nn.Module = T5ForConditionalGeneration(config)
     model.load_state_dict(state_dict, strict=False)
