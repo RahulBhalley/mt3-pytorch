@@ -24,7 +24,7 @@ def _map_state_dict(state_dict, mapping):
             value = value.T
         elif k.endswith("scale") or k.endswith('embedding'):
             k = k.replace('kernel', 'weight')
-        new_state_dict[k] = torch.from_numpy(value)
+        new_state_dict[k] = torch.from_numpy(np.array(value))
     for k in list(set(remove_key)):
         del new_state_dict[k]
     return new_state_dict
