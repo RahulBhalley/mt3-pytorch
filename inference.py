@@ -23,6 +23,7 @@ class InferenceHandler:
         config = T5Config.from_dict(config_dict)
         model: nn.Module = T5ForConditionalGeneration(config)
         model.load_state_dict(torch.load(weight_path, map_location='cpu'), strict=True)
+        print("Loaded checkpoint!")
         model.eval()
         self.SAMPLE_RATE = 16000
         self.spectrogram_config = spectrograms.SpectrogramConfig()
