@@ -2,6 +2,7 @@ import json
 import torch
 import numpy as np
 import torch.nn as nn
+import argparse
 
 
 def _map_state_dict(state_dict, mapping):
@@ -125,8 +126,8 @@ def load_t5x_statedict(path='/home/kunato/mt3/mt3_flax_state_dict.pk'):
     return state_dict
 
 
-def main():
-    state_dict = load_t5x_statedict()
+def main(args):
+    state_dict = load_t5x_statedict(path=args.checkpoint_path)
     state_dict = parse_t5x_state_dict(state_dict)
     config_dict = {
         "architectures": [
@@ -165,4 +166,10 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+
+    # Parse the arguments.
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--checkpoint_path", type=str)
+    args = parser.parse_args()
+
+    main(args=args)
