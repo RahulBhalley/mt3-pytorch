@@ -472,17 +472,24 @@ class T5Stack(T5PreTrainedModel):
             all_hidden_states = all_hidden_states + (hidden_states,)
 
         if not return_dict:
-            return tuple(
-                v
-                for v in [
-                    hidden_states,
-                    present_key_value_states,
-                    all_hidden_states,
-                    all_attentions,
-                    all_cross_attentions,
-                ]
-                if v is not None
-            )
+            tup = []
+            for v in [hidden_states, present_key_value_states, all_hidden_states, all_attentions, all_cross_attentions,]:
+                if v is not None:
+                    tup.append(v)
+            return tuple(tup)
+
+        # if not return_dict:
+        #     return tuple(
+        #         v
+        #         for v in [
+        #             hidden_states,
+        #             present_key_value_states,
+        #             all_hidden_states,
+        #             all_attentions,
+        #             all_cross_attentions,
+        #         ]
+        #         if v is not None
+        #     )
         return BaseModelOutputWithPastAndCrossAttentions(
             last_hidden_state=hidden_states,
             past_key_values=present_key_value_states,
