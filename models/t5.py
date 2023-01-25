@@ -404,6 +404,9 @@ class T5Stack(T5PreTrainedModel):
                     )
                     use_cache = False
 
+                print("CALLED: if self.gradient_checkpointing and self.training:")
+                print(self.training, self.gradient_checkpointing)
+
                 def create_custom_forward(module):
                     def custom_forward(*inputs):
                         return tuple(module(*inputs, use_cache, output_attentions))
