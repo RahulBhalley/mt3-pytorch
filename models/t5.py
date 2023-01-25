@@ -318,13 +318,12 @@ class T5Stack(T5PreTrainedModel):
         )
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        # if input_ids is not None and inputs_embeds is not None:
-        #     err_msg_prefix = "decoder_" if self.is_decoder else ""
-        #     raise ValueError(
-        #         f"You cannot specify both {err_msg_prefix}input_ids and {err_msg_prefix}inputs_embeds at the same time"
-        #     )
-        # elif inputs_embeds is not None:
-        if inputs_embeds is not None:
+        if input_ids is not None and inputs_embeds is not None:
+            err_msg_prefix = "decoder_" if self.is_decoder else ""
+            raise ValueError(
+                f"You cannot specify both {err_msg_prefix}input_ids and {err_msg_prefix}inputs_embeds at the same time"
+            )
+        elif inputs_embeds is not None:
             input_shape = inputs_embeds.size()[:-1]
         elif input_ids is not None:
             input_shape = input_ids.size()[:2]
@@ -338,8 +337,8 @@ class T5Stack(T5PreTrainedModel):
         mask_seq_length = past_key_values[0][0].shape[2] + \
             seq_length if past_key_values is not None else seq_length
         past_key_values_length = past_key_values[0][0].shape[2] if past_key_values is not None else 0
-        # if use_cache is True:
-        #     assert self.is_decoder, f"`use_cache` can only be set to `True` if {self} is used as a decoder"
+        if use_cache is True:
+            assert self.is_decoder, f"`use_cache` can only be set to `True` if {self} is used as a decoder"
 
         if attention_mask is None:
             attention_mask = torch.ones(
@@ -398,48 +397,45 @@ class T5Stack(T5PreTrainedModel):
             if output_hidden_states:
                 all_hidden_states = all_hidden_states + (hidden_states,)
 
-            # if self.gradient_checkpointing and self.training:
-            #     if use_cache:
-            #         logger.warning(
-            #             "`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`..."
-            #         )
-            #         use_cache = False
+            if self.gradient_checkpointing and self.training:
+                if use_cache:
+                    logger.warning(
+                        "`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`..."
+                    )
+                    use_cache = False
 
-            #     print("CALLED: if self.gradient_checkpointing and self.training:")
-            #     print(self.training, self.gradient_checkpointing)
+                def create_custom_forward(module):
+                    def custom_forward(*inputs):
+                        return tuple(module(*inputs, use_cache, output_attentions))
 
-            #     def create_custom_forward(module):
-            #         def custom_forward(*inputs):
-            #             return tuple(module(*inputs, use_cache, output_attentions))
+                    return custom_forward
 
-            #         return custom_forward
-
-            #     layer_outputs = checkpoint(
-            #         create_custom_forward(layer_module),
-            #         hidden_states,
-            #         extended_attention_mask,
-            #         position_bias,
-            #         encoder_hidden_states,
-            #         encoder_extended_attention_mask,
-            #         encoder_decoder_position_bias,
-            #         layer_head_mask,
-            #         cross_attn_layer_head_mask,
-            #         None,  # past_key_value is always None with gradient checkpointing
-            #     )
-            # else:
-            layer_outputs = layer_module(
-                hidden_states,
-                attention_mask=extended_attention_mask,
-                position_bias=position_bias,
-                encoder_hidden_states=encoder_hidden_states,
-                encoder_attention_mask=encoder_extended_attention_mask,
-                encoder_decoder_position_bias=encoder_decoder_position_bias,
-                layer_head_mask=layer_head_mask,
-                cross_attn_layer_head_mask=cross_attn_layer_head_mask,
-                past_key_value=past_key_value,
-                use_cache=use_cache,
-                output_attentions=output_attentions,
-            )
+                layer_outputs = checkpoint(
+                    create_custom_forward(layer_module),
+                    hidden_states,
+                    extended_attention_mask,
+                    position_bias,
+                    encoder_hidden_states,
+                    encoder_extended_attention_mask,
+                    encoder_decoder_position_bias,
+                    layer_head_mask,
+                    cross_attn_layer_head_mask,
+                    None,  # past_key_value is always None with gradient checkpointing
+                )
+            else:
+                layer_outputs = layer_module(
+                    hidden_states,
+                    attention_mask=extended_attention_mask,
+                    position_bias=position_bias,
+                    encoder_hidden_states=encoder_hidden_states,
+                    encoder_attention_mask=encoder_extended_attention_mask,
+                    encoder_decoder_position_bias=encoder_decoder_position_bias,
+                    layer_head_mask=layer_head_mask,
+                    cross_attn_layer_head_mask=cross_attn_layer_head_mask,
+                    past_key_value=past_key_value,
+                    use_cache=use_cache,
+                    output_attentions=output_attentions,
+                )
 
             # layer_outputs is a tuple with:
             # hidden-states, key-value-states, (self-attention position bias), (self-attention weights), (cross-attention position bias), (cross-attention weights)
@@ -473,24 +469,17 @@ class T5Stack(T5PreTrainedModel):
             all_hidden_states = all_hidden_states + (hidden_states,)
 
         if not return_dict:
-            tup = []
-            for v in [hidden_states, present_key_value_states, all_hidden_states, all_attentions, all_cross_attentions,]:
-                if v is not None:
-                    tup.append(v)
-            return tuple(tup)
-
-        # if not return_dict:
-        #     return tuple(
-        #         v
-        #         for v in [
-        #             hidden_states,
-        #             present_key_value_states,
-        #             all_hidden_states,
-        #             all_attentions,
-        #             all_cross_attentions,
-        #         ]
-        #         if v is not None
-        #     )
+            return tuple(
+                v
+                for v in [
+                    hidden_states,
+                    present_key_value_states,
+                    all_hidden_states,
+                    all_attentions,
+                    all_cross_attentions,
+                ]
+                if v is not None
+            )
         return BaseModelOutputWithPastAndCrossAttentions(
             last_hidden_state=hidden_states,
             past_key_values=present_key_value_states,
