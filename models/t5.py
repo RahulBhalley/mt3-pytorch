@@ -397,45 +397,58 @@ class T5Stack(T5PreTrainedModel):
             if output_hidden_states:
                 all_hidden_states = all_hidden_states + (hidden_states,)
 
-            if self.gradient_checkpointing and self.training:
-                if use_cache:
-                    logger.warning(
-                        "`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`..."
-                    )
-                    use_cache = False
+            # if self.gradient_checkpointing and self.training:
+            #     if use_cache:
+            #         logger.warning(
+            #             "`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`..."
+            #         )
+            #         use_cache = False
 
-                def create_custom_forward(module):
-                    def custom_forward(*inputs):
-                        return tuple(module(*inputs, use_cache, output_attentions))
+            #     def create_custom_forward(module):
+            #         def custom_forward(*inputs):
+            #             return tuple(module(*inputs, use_cache, output_attentions))
 
-                    return custom_forward
+            #         return custom_forward
 
-                layer_outputs = checkpoint(
-                    create_custom_forward(layer_module),
-                    hidden_states,
-                    extended_attention_mask,
-                    position_bias,
-                    encoder_hidden_states,
-                    encoder_extended_attention_mask,
-                    encoder_decoder_position_bias,
-                    layer_head_mask,
-                    cross_attn_layer_head_mask,
-                    None,  # past_key_value is always None with gradient checkpointing
-                )
-            else:
-                layer_outputs = layer_module(
-                    hidden_states,
-                    attention_mask=extended_attention_mask,
-                    position_bias=position_bias,
-                    encoder_hidden_states=encoder_hidden_states,
-                    encoder_attention_mask=encoder_extended_attention_mask,
-                    encoder_decoder_position_bias=encoder_decoder_position_bias,
-                    layer_head_mask=layer_head_mask,
-                    cross_attn_layer_head_mask=cross_attn_layer_head_mask,
-                    past_key_value=past_key_value,
-                    use_cache=use_cache,
-                    output_attentions=output_attentions,
-                )
+            #     layer_outputs = checkpoint(
+            #         create_custom_forward(layer_module),
+            #         hidden_states,
+            #         extended_attention_mask,
+            #         position_bias,
+            #         encoder_hidden_states,
+            #         encoder_extended_attention_mask,
+            #         encoder_decoder_position_bias,
+            #         layer_head_mask,
+            #         cross_attn_layer_head_mask,
+            #         None,  # past_key_value is always None with gradient checkpointing
+            #     )
+            # else:
+            #     layer_outputs = layer_module(
+            #         hidden_states,
+            #         attention_mask=extended_attention_mask,
+            #         position_bias=position_bias,
+            #         encoder_hidden_states=encoder_hidden_states,
+            #         encoder_attention_mask=encoder_extended_attention_mask,
+            #         encoder_decoder_position_bias=encoder_decoder_position_bias,
+            #         layer_head_mask=layer_head_mask,
+            #         cross_attn_layer_head_mask=cross_attn_layer_head_mask,
+            #         past_key_value=past_key_value,
+            #         use_cache=use_cache,
+            #         output_attentions=output_attentions,
+            #     )
+            layer_outputs = layer_module(
+                hidden_states,
+                attention_mask=extended_attention_mask,
+                position_bias=position_bias,
+                encoder_hidden_states=encoder_hidden_states,
+                encoder_attention_mask=encoder_extended_attention_mask,
+                encoder_decoder_position_bias=encoder_decoder_position_bias,
+                layer_head_mask=layer_head_mask,
+                cross_attn_layer_head_mask=cross_attn_layer_head_mask,
+                past_key_value=past_key_value,
+                use_cache=use_cache,
+                output_attentions=output_attentions,
+            )
 
             # layer_outputs is a tuple with:
             # hidden-states, key-value-states, (self-attention position bias), (self-attention weights), (cross-attention position bias), (cross-attention weights)
